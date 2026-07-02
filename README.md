@@ -15,34 +15,32 @@ The scripts use China-friendly mirrors by default:
 
 ## macOS / Linux
 
-Private repository one-liner:
+Public one-liner:
 
 ```bash
-tmpdir="$(mktemp -d)" && git clone --depth=1 --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git "$tmpdir" && bash "$tmpdir/install.sh"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.1/install.sh)"
 ```
 
 ## Windows PowerShell
 
-Private repository one-liner:
+Public one-liner:
 
 ```powershell
-$dir = Join-Path $env:TEMP "self-agent-installer"; if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }; git clone --depth=1 --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git $dir; & "$dir\install.ps1"
+irm https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.1/install.ps1 | iex
 ```
 
-## Access Control Without A Server
+## Public Link
 
-There is no real access control for a public raw URL. Anyone who receives it can run it.
+This mode does not require GitHub login or repository access. Anyone who receives the raw URL can run it.
 
-Use one of these lightweight options instead:
+To make the link work, set the GitHub repository visibility to public:
 
-1. Put this repository in a private GitHub/Gitee repository and add approved users as collaborators.
-2. Ask users to authenticate with Git first, then run the installer from a local clone.
-3. Use a fixed tag such as `v1.0.0` for stable installer behavior.
+`Settings -> General -> Danger Zone -> Change repository visibility -> Change to public`
 
-Example private-repo flow:
+Manual public flow:
 
 ```bash
-git clone --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git
+git clone --branch v1.0.1 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 bash install.sh
 ```
@@ -50,12 +48,12 @@ bash install.sh
 Windows:
 
 ```powershell
-git clone --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git
+git clone --branch v1.0.1 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 .\install.ps1
 ```
 
-If you need a one-line command and access control at the same time, use a private repository plus a short-lived personal access token. Do not embed long-lived tokens in shared links.
+Use tags such as `v1.0.1` for stable installer behavior. Use `main` only if you want the command to always run the newest script.
 
 ## Configuration
 
