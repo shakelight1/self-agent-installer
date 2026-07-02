@@ -15,14 +15,18 @@ The scripts use China-friendly mirrors by default:
 
 ## macOS / Linux
 
+Private repository one-liner:
+
 ```bash
-/bin/bash -c "$(curl -fsSL https://gitee.com/YOUR_ORG/agent-installer/raw/main/install.sh)"
+tmpdir="$(mktemp -d)" && git clone --depth=1 git@github.com:shakelight1/self-agent-installer.git "$tmpdir" && bash "$tmpdir/install.sh"
 ```
 
 ## Windows PowerShell
 
+Private repository one-liner:
+
 ```powershell
-irm https://gitee.com/YOUR_ORG/agent-installer/raw/main/install.ps1 | iex
+$dir = Join-Path $env:TEMP "self-agent-installer"; if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }; git clone --depth=1 git@github.com:shakelight1/self-agent-installer.git $dir; & "$dir\install.ps1"
 ```
 
 ## Access Control Without A Server
@@ -38,16 +42,16 @@ Use one of these lightweight options instead:
 Example private-repo flow:
 
 ```bash
-git clone git@gitee.com:YOUR_ORG/agent-installer.git
-cd agent-installer
+git clone git@github.com:shakelight1/self-agent-installer.git
+cd self-agent-installer
 bash install.sh
 ```
 
 Windows:
 
 ```powershell
-git clone git@gitee.com:YOUR_ORG/agent-installer.git
-cd agent-installer
+git clone git@github.com:shakelight1/self-agent-installer.git
+cd self-agent-installer
 .\install.ps1
 ```
 
