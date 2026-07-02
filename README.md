@@ -13,20 +13,41 @@ The scripts use China-friendly mirrors by default:
 - PyPI: `https://pypi.tuna.tsinghua.edu.cn/simple`
 - Node.js: `https://npmmirror.com/mirrors/node`
 
-## macOS / Linux
+## China Mainland No-Proxy Command
 
-Public one-liner:
+Mirror this repository to a public Gitee repository first:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.1/install.sh)"
+git remote add gitee git@gitee.com:shakelight1/self-agent-installer.git
+git push gitee main --tags
 ```
 
-## Windows PowerShell
+Then use the Gitee raw URL.
 
-Public one-liner:
+macOS / Linux:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://gitee.com/shakelight1/self-agent-installer/raw/v1.0.2/install.sh)"
+```
+
+Windows PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.1/install.ps1 | iex
+irm https://gitee.com/shakelight1/self-agent-installer/raw/v1.0.2/install.ps1 | iex
+```
+
+## GitHub Public Command
+
+macOS / Linux:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.2/install.sh)"
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.2/install.ps1 | iex
 ```
 
 ## Public Link
@@ -40,7 +61,7 @@ To make the link work, set the GitHub repository visibility to public:
 Manual public flow:
 
 ```bash
-git clone --branch v1.0.1 https://github.com/shakelight1/self-agent-installer.git
+git clone --branch v1.0.2 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 bash install.sh
 ```
@@ -48,12 +69,14 @@ bash install.sh
 Windows:
 
 ```powershell
-git clone --branch v1.0.1 https://github.com/shakelight1/self-agent-installer.git
+git clone --branch v1.0.2 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 .\install.ps1
 ```
 
-Use tags such as `v1.0.1` for stable installer behavior. Use `main` only if you want the command to always run the newest script.
+Use tags such as `v1.0.2` for stable installer behavior. Use `main` only if you want the command to always run the newest script.
+
+Avoid third-party GitHub raw proxy URLs for bootstrap scripts unless you fully trust that proxy. The bootstrap script decides what code runs on the user's machine.
 
 ## Configuration
 
