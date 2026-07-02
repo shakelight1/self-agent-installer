@@ -18,7 +18,7 @@ The scripts use China-friendly mirrors by default:
 Private repository one-liner:
 
 ```bash
-tmpdir="$(mktemp -d)" && git clone --depth=1 git@github.com:shakelight1/self-agent-installer.git "$tmpdir" && bash "$tmpdir/install.sh"
+tmpdir="$(mktemp -d)" && git clone --depth=1 --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git "$tmpdir" && bash "$tmpdir/install.sh"
 ```
 
 ## Windows PowerShell
@@ -26,7 +26,7 @@ tmpdir="$(mktemp -d)" && git clone --depth=1 git@github.com:shakelight1/self-age
 Private repository one-liner:
 
 ```powershell
-$dir = Join-Path $env:TEMP "self-agent-installer"; if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }; git clone --depth=1 git@github.com:shakelight1/self-agent-installer.git $dir; & "$dir\install.ps1"
+$dir = Join-Path $env:TEMP "self-agent-installer"; if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }; git clone --depth=1 --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git $dir; & "$dir\install.ps1"
 ```
 
 ## Access Control Without A Server
@@ -42,7 +42,7 @@ Use one of these lightweight options instead:
 Example private-repo flow:
 
 ```bash
-git clone git@github.com:shakelight1/self-agent-installer.git
+git clone --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git
 cd self-agent-installer
 bash install.sh
 ```
@@ -50,7 +50,7 @@ bash install.sh
 Windows:
 
 ```powershell
-git clone git@github.com:shakelight1/self-agent-installer.git
+git clone --branch v1.0.0 git@github.com:shakelight1/self-agent-installer.git
 cd self-agent-installer
 .\install.ps1
 ```
