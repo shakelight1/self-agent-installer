@@ -11,6 +11,8 @@ $NpmPrefix = Join-Path $InstallHome "npm-global"
 $HermesVenv = Join-Path $InstallHome "hermes-venv"
 $HermesScripts = Join-Path $HermesVenv "Scripts"
 $HermesPython = Join-Path $HermesScripts "python.exe"
+$NodeExe = Join-Path $NodeHome "node.exe"
+$NpmCmd = Join-Path $NodeHome "npm.cmd"
 
 function Write-Step($Message) {
   Write-Host "[agent-installer] $Message" -ForegroundColor Cyan
@@ -44,6 +46,42 @@ function Invoke-External {
     $args = $CommandAndArgs[1..($CommandAndArgs.Length - 1)]
   }
   & $exe @args
+}
+
+function Invoke-Checked {
+  param(
+    [string]$FilePath,
+    [string[]]$Arguments,
+    [string]$Action
+  )
+  & $FilePath @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "$Action failed with exit code $LASTEXITCODE."
+  }
+}
+
+function Get-NpmCmd {
+  if (Test-Path $NpmCmd) {
+    return $NpmCmd
+  }
+  $found = Get-Command npm.cmd -ErrorAction SilentlyContinue
+  if ($found) {
+    return $found.Source
+  }
+  throw "npm.cmd is not available. Node.js installation may be incomplete."
+}
+
+function Get-CommandCmd {
+  param([string]$Name)
+  $local = Join-Path $NpmPrefix "$Name.cmd"
+  if (Test-Path $local) {
+    return $local
+  }
+  $found = Get-Command "$Name.cmd" -ErrorAction SilentlyContinue
+  if ($found) {
+    return $found.Source
+  }
+  return $null
 }
 
 function Get-NodePlatform {
@@ -99,11 +137,12 @@ function Ensure-Node {
     Write-Step "Using existing Node.js: $(node -v)"
   } else {
     Install-NodeFromMirror
-    Write-Step "Installed Node.js: $(& (Join-Path $NodeHome "node.exe") -v)"
+    Write-Step "Installed Node.js: $(& $NodeExe -v)"
   }
 
-  npm config set registry $NpmRegistry | Out-Null
-  npm config set prefix $NpmPrefix | Out-Null
+  $npm = Get-NpmCmd
+  Invoke-Checked -FilePath $npm -Arguments @("config", "set", "registry", $NpmRegistry) -Action "Configure npm registry"
+  Invoke-Checked -FilePath $npm -Arguments @("config", "set", "prefix", $NpmPrefix) -Action "Configure npm prefix"
 }
 
 function Get-PythonCommand {
@@ -126,7 +165,7 @@ function Invoke-Python {
 
 function Invoke-HermesPython {
   param([string[]]$Arguments)
-  & $HermesPython @Arguments
+  Invoke-Checked -FilePath $HermesPython -Arguments $Arguments -Action "Run Hermes Python"
 }
 
 function Ensure-PythonAndPip {
@@ -135,6 +174,9 @@ function Ensure-PythonAndPip {
   Write-Step "Using Python: $version"
   if (-not (Test-Path $HermesPython)) {
     Invoke-Python @("-m", "venv", $HermesVenv)
+    if (-not (Test-Path $HermesPython)) {
+      throw "Create Hermes Python virtual environment failed."
+    }
   }
   Invoke-HermesPython @("-m", "ensurepip", "--upgrade") 2>$null
   Invoke-HermesPython @("-m", "pip", "--version") | Out-Null
@@ -144,7 +186,8 @@ function Ensure-PythonAndPip {
 
 function Install-NpmAgents {
   Write-Step "Installing OpenClaw, Codex, and Claude Code from $NpmRegistry"
-  npm install -g openclaw@latest @openai/codex@latest @anthropic-ai/claude-code@latest --registry=$NpmRegistry
+  $npm = Get-NpmCmd
+  Invoke-Checked -FilePath $npm -Arguments @("install", "-g", "openclaw@latest", "@openai/codex@latest", "@anthropic-ai/claude-code@latest", "--registry=$NpmRegistry") -Action "Install npm agents"
 }
 
 function Install-Hermes {
@@ -155,9 +198,9 @@ function Install-Hermes {
 function Print-Versions {
   Write-Step "Installed command versions:"
   foreach ($command in @("openclaw", "codex", "claude")) {
-    $found = Get-Command $command -ErrorAction SilentlyContinue
+    $found = Get-CommandCmd $command
     if ($found) {
-      & $command --version
+      & $found --version
     } else {
       Write-Warn "$command command is not available in current PATH."
     }
