@@ -17,6 +17,7 @@ $HermesPython = Join-Path $HermesScripts "python.exe"
 $NodeExe = Join-Path $NodeHome "node.exe"
 $NpmCmd = Join-Path $NodeHome "npm.cmd"
 $PythonExe = Join-Path $PythonHome "python.exe"
+$PythonInstallLog = Join-Path $env:TEMP "agent-installer-python-install.log"
 
 function Write-Step($Message) {
   Write-Host "[agent-installer] $Message" -ForegroundColor Cyan
@@ -88,6 +89,40 @@ function Get-CommandCmd {
   return $null
 }
 
+function Test-PythonCommand {
+  param([string[]]$CommandAndArgs)
+  if (-not $CommandAndArgs) {
+    return $false
+  }
+  try {
+    $exe = $CommandAndArgs[0]
+    $args = @()
+    if ($CommandAndArgs.Length -gt 1) {
+      $args = $CommandAndArgs[1..($CommandAndArgs.Length - 1)]
+    }
+    $versionArgs = @($args) + @("--version")
+    $output = & $exe @versionArgs 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      return $false
+    }
+    return ($output -match "Python 3\.")
+  } catch {
+    return $false
+  }
+}
+
+function Remove-NpmPowerShellShims {
+  $shimNames = @("openclaw", "codex", "claude")
+  foreach ($name in $shimNames) {
+    $ps1 = Join-Path $NpmPrefix "$name.ps1"
+    $cmd = Join-Path $NpmPrefix "$name.cmd"
+    if ((Test-Path $ps1) -and (Test-Path $cmd)) {
+      Remove-Item -Force $ps1
+      Write-Step "Removed PowerShell shim to avoid ExecutionPolicy block: $ps1"
+    }
+  }
+}
+
 function Get-NodePlatform {
   if (-not $IsWindows -and $PSVersionTable.PSEdition -eq "Core") {
     throw "Use install.sh on macOS or Linux."
@@ -151,14 +186,14 @@ function Ensure-Node {
 
 function Get-PythonCommand {
   $py = Get-Command py -ErrorAction SilentlyContinue
-  if ($py) {
+  if ($py -and (Test-PythonCommand -CommandAndArgs @("py", "-3"))) {
     return @("py", "-3")
   }
   $python = Get-Command python -ErrorAction SilentlyContinue
-  if ($python) {
+  if ($python -and (Test-PythonCommand -CommandAndArgs @("python"))) {
     return @("python")
   }
-  if (Test-Path $PythonExe) {
+  if ((Test-Path $PythonExe) -and (Test-PythonCommand -CommandAndArgs @($PythonExe))) {
     return @($PythonExe)
   }
   return $null
@@ -186,16 +221,31 @@ function Install-PythonFromMirror {
     Remove-Item -Recurse -Force $PythonHome
   }
 
-  Write-Step "Installing Python $PythonVersion to $PythonHome (per-user, silent)"
-  $installArgs = "/quiet InstallAllUsers=0 `"TargetDir=$PythonHome`" PrependPath=0 Include_launcher=0 Include_test=0 Include_pip=1 CompileAll=0"
-  $proc = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru
+  Write-Step "Installing Python $PythonVersion to $PythonHome (per-user, quiet). Log: $PythonInstallLog"
+  $installArgs = @(
+    "/quiet",
+    "/norestart",
+    "InstallAllUsers=0",
+    "TargetDir=`"$PythonHome`"",
+    "PrependPath=0",
+    "Include_launcher=0",
+    "Include_test=0",
+    "Include_pip=1",
+    "Include_tcltk=0",
+    "Include_doc=0",
+    "CompileAll=0",
+    "/log",
+    $PythonInstallLog
+  )
+  $proc = Start-Process -FilePath $installerPath -ArgumentList $installArgs -WindowStyle Hidden -Wait -PassThru
   Remove-Item -Force $installerPath -ErrorAction SilentlyContinue
   if ($proc.ExitCode -ne 0) {
-    throw "Python installer failed with exit code $($proc.ExitCode)."
+    throw "Python installer failed with exit code $($proc.ExitCode). See log: $PythonInstallLog"
   }
   if (-not (Test-Path $PythonExe)) {
-    throw "Python installation to $PythonHome did not produce python.exe."
+    throw "Python installation to $PythonHome did not produce python.exe. See log: $PythonInstallLog"
   }
+  Invoke-Checked -FilePath $PythonExe -Arguments @("--version") -Action "Verify installed Python"
 }
 
 function Invoke-Python {
@@ -238,6 +288,7 @@ function Install-NpmAgents {
   Write-Step "Installing OpenClaw, Codex, and Claude Code from $NpmRegistry"
   $npm = Get-NpmCmd
   Invoke-Checked -FilePath $npm -Arguments @("install", "-g", "openclaw@latest", "@openai/codex@latest", "@anthropic-ai/claude-code@latest", "--registry=$NpmRegistry") -Action "Install npm agents"
+  Remove-NpmPowerShellShims
 }
 
 function Install-Hermes {
