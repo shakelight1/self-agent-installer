@@ -5,14 +5,18 @@ $PypiIndexUrl = if ($env:PYPI_INDEX_URL) { $env:PYPI_INDEX_URL } else { "https:/
 $PypiTrustedHost = if ($env:PYPI_TRUSTED_HOST) { $env:PYPI_TRUSTED_HOST } else { "pypi.tuna.tsinghua.edu.cn" }
 $NodeMirror = if ($env:NODE_MIRROR) { $env:NODE_MIRROR.TrimEnd("/") } else { "https://npmmirror.com/mirrors/node" }
 $NodeChannel = if ($env:NODE_CHANNEL) { $env:NODE_CHANNEL } else { "latest-v22.x" }
+$PythonMirror = if ($env:PYTHON_MIRROR) { $env:PYTHON_MIRROR.TrimEnd("/") } else { "https://registry.npmmirror.com/-/binary/python" }
+$PythonVersion = if ($env:PYTHON_VERSION) { $env:PYTHON_VERSION } else { "3.12.10" }
 $InstallHome = if ($env:AGENT_INSTALLER_HOME) { $env:AGENT_INSTALLER_HOME } else { Join-Path $env:USERPROFILE ".agent-installer" }
 $NodeHome = Join-Path $InstallHome "node"
 $NpmPrefix = Join-Path $InstallHome "npm-global"
+$PythonHome = Join-Path $InstallHome "python"
 $HermesVenv = Join-Path $InstallHome "hermes-venv"
 $HermesScripts = Join-Path $HermesVenv "Scripts"
 $HermesPython = Join-Path $HermesScripts "python.exe"
 $NodeExe = Join-Path $NodeHome "node.exe"
 $NpmCmd = Join-Path $NodeHome "npm.cmd"
+$PythonExe = Join-Path $PythonHome "python.exe"
 
 function Write-Step($Message) {
   Write-Host "[agent-installer] $Message" -ForegroundColor Cyan
@@ -154,7 +158,44 @@ function Get-PythonCommand {
   if ($python) {
     return @("python")
   }
-  throw "Python 3 is required for hermes-agent. Install Python 3 first, then rerun this script."
+  if (Test-Path $PythonExe) {
+    return @($PythonExe)
+  }
+  return $null
+}
+
+function Get-PythonArch {
+  switch ($env:PROCESSOR_ARCHITECTURE) {
+    "ARM64" { return "arm64" }
+    "AMD64" { return "amd64" }
+    default { throw "Unsupported CPU architecture for Python: $env:PROCESSOR_ARCHITECTURE" }
+  }
+}
+
+function Install-PythonFromMirror {
+  New-Item -ItemType Directory -Force -Path $InstallHome | Out-Null
+  $arch = Get-PythonArch
+  $filename = "python-$PythonVersion-$arch.exe"
+  $url = "$PythonMirror/$PythonVersion/$filename"
+  $installerPath = Join-Path $env:TEMP $filename
+
+  Write-Step "Downloading Python from $url"
+  Invoke-WebRequest -Uri $url -OutFile $installerPath
+
+  if (Test-Path $PythonHome) {
+    Remove-Item -Recurse -Force $PythonHome
+  }
+
+  Write-Step "Installing Python $PythonVersion to $PythonHome (per-user, silent)"
+  $installArgs = "/quiet InstallAllUsers=0 `"TargetDir=$PythonHome`" PrependPath=0 Include_launcher=0 Include_test=0 Include_pip=1 CompileAll=0"
+  $proc = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru
+  Remove-Item -Force $installerPath -ErrorAction SilentlyContinue
+  if ($proc.ExitCode -ne 0) {
+    throw "Python installer failed with exit code $($proc.ExitCode)."
+  }
+  if (-not (Test-Path $PythonExe)) {
+    throw "Python installation to $PythonHome did not produce python.exe."
+  }
 }
 
 function Invoke-Python {
@@ -170,6 +211,15 @@ function Invoke-HermesPython {
 
 function Ensure-PythonAndPip {
   $cmd = Get-PythonCommand
+  if (-not $cmd) {
+    Write-Step "Python 3 not found. Downloading from mirror."
+    Install-PythonFromMirror
+    Add-UserPath $PythonHome
+    $cmd = Get-PythonCommand
+    if (-not $cmd) {
+      throw "Python installation from mirror did not produce a usable python command."
+    }
+  }
   $version = Invoke-External (@($cmd) + @("--version"))
   Write-Step "Using Python: $version"
   if (-not (Test-Path $HermesPython)) {

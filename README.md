@@ -27,13 +27,13 @@ Then use the Gitee raw URL.
 macOS / Linux:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://gitee.com/yaoguang111/self-agent-installer/raw/v1.0.3/install.sh)"
+/bin/bash -c "$(curl -fsSL https://gitee.com/yaoguang111/self-agent-installer/raw/v1.0.4/install.sh)"
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm https://gitee.com/yaoguang111/self-agent-installer/raw/v1.0.3/install.ps1 | iex
+irm https://gitee.com/yaoguang111/self-agent-installer/raw/v1.0.4/install.ps1 | iex
 ```
 
 ## GitHub Public Command
@@ -41,13 +41,13 @@ irm https://gitee.com/yaoguang111/self-agent-installer/raw/v1.0.3/install.ps1 | 
 macOS / Linux:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.3/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.4/install.sh)"
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.3/install.ps1 | iex
+irm https://raw.githubusercontent.com/shakelight1/self-agent-installer/v1.0.4/install.ps1 | iex
 ```
 
 ## Public Link
@@ -61,7 +61,7 @@ To make the link work, set the GitHub repository visibility to public:
 Manual public flow:
 
 ```bash
-git clone --branch v1.0.3 https://github.com/shakelight1/self-agent-installer.git
+git clone --branch v1.0.4 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 bash install.sh
 ```
@@ -69,12 +69,12 @@ bash install.sh
 Windows:
 
 ```powershell
-git clone --branch v1.0.3 https://github.com/shakelight1/self-agent-installer.git
+git clone --branch v1.0.4 https://github.com/shakelight1/self-agent-installer.git
 cd self-agent-installer
 .\install.ps1
 ```
 
-Use tags such as `v1.0.3` for stable installer behavior. Use `main` only if you want the command to always run the newest script.
+Use tags such as `v1.0.4` for stable installer behavior. Use `main` only if you want the command to always run the newest script.
 
 Avoid third-party GitHub raw proxy URLs for bootstrap scripts unless you fully trust that proxy. The bootstrap script decides what code runs on the user's machine.
 
@@ -87,6 +87,8 @@ These environment variables can override mirrors:
 - `PYPI_TRUSTED_HOST`
 - `NODE_MIRROR`
 - `NODE_CHANNEL`
+- `PYTHON_MIRROR` (Windows only; default `https://registry.npmmirror.com/-/binary/python`)
+- `PYTHON_VERSION` (Windows only; default `3.12.10`)
 - `AGENT_INSTALLER_HOME`
 
 The default install location is:
@@ -95,3 +97,5 @@ The default install location is:
 - Windows: `%USERPROFILE%\.agent-installer`
 
 Hermes Agent is installed into a dedicated Python virtual environment under the install location. The installer writes user-level PATH entries only. It does not require `sudo` or Administrator by default.
+
+On Windows, if Python 3 is not already installed, `install.ps1` downloads the official python.org installer from the mirror and performs a silent, per-user install into `%AGENT_INSTALLER_HOME%\python` (no Administrator rights needed). On macOS/Linux, `install.sh` still requires Python 3 to be installed beforehand.
